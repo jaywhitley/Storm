@@ -1,0 +1,193 @@
+//
+//  ViewController.swift
+//  Storm
+//
+//  Created by Jay Whitley jr on 8/22/15.
+//  Copyright (c) 2015 Jay Whitley jr. All rights reserved.
+//
+
+import UIKit
+import Foundation
+import FBSDKCoreKit
+import FBSDKLoginKit
+import Parse
+
+class ViewController: UIViewController {
+    
+    var teams:[Team] = []
+    var data = getData()
+    var number = 0
+    
+    @IBOutlet weak var menuButton: UIButton!
+    @IBOutlet weak var backgroundImageView: UIImageView!
+    @IBOutlet weak var backgroundMaskView: UIView!
+    @IBOutlet weak var teamImage: UIImageView!
+    @IBOutlet weak var dialogueView: UIView!
+    @IBOutlet weak var headerView: UIView!
+    @IBOutlet weak var titleLabel: UILabel!
+    @IBOutlet weak var locationLabel: UILabel!
+    @IBOutlet weak var locationIndicatorImageView: UIImageView!
+    @IBOutlet weak var teamImageButton: UIButton!
+    
+    @IBAction func menuButtonDP(sender: AnyObject) {
+    }
+    
+    @IBAction func teamImageButtonDP(sender: AnyObject) {
+    }
+    
+    @IBAction func presentNavigation(sender: AnyObject?){
+        performSegueWithIdentifier("presentNav", sender: self)
+    }
+   
+
+    // Light status bar
+    override func preferredStatusBarStyle() -> UIStatusBarStyle {
+        return UIStatusBarStyle.LightContent
+    }
+    
+    override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject!) {
+        if segue.identifier == "showTeam" {
+            // let controller = segue.destinationViewController as!
+          //  controller.data = data
+          //  controller.number = number
+        }
+    }
+
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        
+        // Push notif to channel
+        let push = PFPush()
+        push.setChannel("Giants")
+        push.setMessage("The Giants just scored!")
+        push.sendPushInBackground()
+
+        
+        insertBlurView(backgroundMaskView, UIBlurEffectStyle.Dark)
+        insertBlurView(headerView, UIBlurEffectStyle.Dark)
+        
+        animator = UIDynamicAnimator(referenceView: view)
+        
+        dialogueView.alpha = 0
+    }
+    
+    override func viewDidAppear(animated: Bool) {
+        super.viewDidAppear(Bool())
+        
+        let scale = CGAffineTransformMakeScale(0.5, 0.5)
+        let translate = CGAffineTransformMakeTranslation(0, -200)
+        dialogueView.transform = CGAffineTransformConcat(scale, translate)
+        
+        spring(0.5) {
+            let scale = CGAffineTransformMakeScale(1, 1)
+            let translate = CGAffineTransformMakeTranslation(0, 0)
+            self.dialogueView.transform = CGAffineTransformConcat(scale, translate)
+        }
+        
+        teamImageButton.setImage(UIImage(named: data[number]["image"]!), forState: UIControlState.Normal)
+        backgroundImageView.image = UIImage(named: data[number]["image"]!)
+        locationLabel.text = data[number]["author"]
+        titleLabel.text = data[number]["title"]
+        
+        dialogueView.alpha = 1
+    }
+    
+    var animator : UIDynamicAnimator!
+    var attachmentBehavior : UIAttachmentBehavior!
+    var gravityBehaviour : UIGravityBehavior!
+    var snapBehavior : UISnapBehavior!
+    
+    @IBOutlet var panRecognizer: UIPanGestureRecognizer!
+    @IBAction func handleGesture(sender: AnyObject) {
+        let myView = dialogueView
+        let location = sender.locationInView(view)
+        let boxLocation = sender.locationInView(dialogueView)
+        
+        
+        if sender.state == UIGestureRecognizerState.Began {
+            if snapBehavior != nil {
+                animator.removeBehavior(snapBehavior)
+            }
+            
+            let centerOffset = UIOffsetMake(boxLocation.x - CGRectGetMidX(myView.bounds), boxLocation.y - CGRectGetMidY(myView.bounds));
+            attachmentBehavior = UIAttachmentBehavior(item: myView, offsetFromCenter: centerOffset, attachedToAnchor: location)
+            attachmentBehavior.frequency = 0
+            
+            animator.addBehavior(attachmentBehavior)
+        }
+        else if sender.state == UIGestureRecognizerState.Changed {
+            attachmentBehavior.anchorPoint = location
+        }
+        else if sender.state == UIGestureRecognizerState.Ended {
+            animator.removeBehavior(attachmentBehavior)
+            
+            snapBehavior = UISnapBehavior(item: myView, snapToPoint: view.center)
+            animator.addBehavior(snapBehavior)
+            
+            let translation = sender.translationInView(view)
+            if translation.y > 100 {
+                animator.removeAllBehaviors()
+                
+                let gravity = UIGravityBehavior(items: [dialogueView])
+                gravity.gravityDirection = CGVectorMake(0, 10)
+                animator.addBehavior(gravity)
+                
+                delay(0.1) {
+                    self.refreshView()
+                }
+            }
+        }
+    }
+    
+    func refreshView() {
+        number++
+        if number > 3 {
+            number = 0
+        }
+        
+        animator.removeAllBehaviors()
+        
+        snapBehavior = UISnapBehavior(item: dialogueView, snapToPoint: view.center)
+        attachmentBehavior.anchorPoint = view.center
+        
+        dialogueView.center = view.center
+        viewDidAppear(true)
+    }
+    }
+
+    
+       
+       /* // create elements programatically
+        let label = UILabel(frame: CGRectMake(self.view.bounds.width / 2 - 100, self.view.bounds.height / 2 - 50 , 200, 100))
+        // self.view.bounds.width / 2 means the center of the screen
+        label.text = "Drag me!"
+        label.textAlignment = NSTextAlignment.Center
+        self.view.addSubview(label)
+        
+        let gesture = UIPanGestureRecognizer(target: self, action: Selector("wasDragged"))
+        label.addGestureRecognizer(gesture)
+        label.userInteractionEnabled = true
+    */
+        
+    
+    
+    
+  //  func wasDragged(gesture: UIPanGestureRecognizer) {
+        
+      
+       /* //Translation of movement. Where it started, and where it ended. This shows the distance from the original point.
+        let translation = gesture.translationInView(self.view)
+        let label = gesture.view!
+        // update labels center from new coordinates
+        label.center = CGPoint(x: self.view.bounds.width / 2 + translation.x, y: self.view.bounds.height / 2 + translation.y)// creates a coordinate pair, relative to the bottom left of the screen */
+        
+        
+        
+   // }
+
+
+
+
+
+
