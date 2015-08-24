@@ -1,0 +1,21 @@
+//
+//  BlurView1.swift
+//  Storm
+//
+//  Created by Jay Whitley jr on 8/23/15.
+//  Copyright (c) 2015 Jay Whitley jr. All rights reserved.
+//
+
+import Foundation
+import UIKit
+
+
+func insertBlurView(view: UIView, style: UIBlurEffectStyle) {
+    view.backgroundColor = UIColor.clearColor()
+    
+    var blurEffect = UIBlurEffect(style: style)
+    var blurEffectView = UIVisualEffectView(effect: blurEffect)
+    blurEffectView.frame = view.bounds
+    view.insertSubview(blurEffectView, atIndex: 0)
+    
+}
